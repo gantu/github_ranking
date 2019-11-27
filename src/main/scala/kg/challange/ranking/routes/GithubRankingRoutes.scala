@@ -4,18 +4,19 @@ import cats.effect.Sync
 import cats.implicits._
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
-import kg.challange.ranking.service.JokesAlgebra
+
+import kg.challange.ranking.service.GithubRankingService
 
 object GithubRankingRoutes {
 
-  def jokeRoutes[F[_]: Sync](J: JokesAlgebra[F]): HttpRoutes[F] = {
+  def rankingRoutes[F[_]: Sync](G: GithubRankingService[F]): HttpRoutes[F] = {
     val dsl = new Http4sDsl[F]{}
     import dsl._
     HttpRoutes.of[F] {
-      case GET -> Root / "joke" =>
+      case GET -> Root / "org" / orgName / "repos" =>
         for {
-          joke <- J.get
-          resp <- Ok(joke)
+          repos <- G.getRepositories(orgName)
+          resp <- Ok(repos)
         } yield resp
     }
   }

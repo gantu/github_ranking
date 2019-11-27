@@ -11,8 +11,8 @@ import scala.concurrent.ExecutionContext.global
 import kg.challange.ranking.routes.GithubRankingRoutes
 import kg.challange.ranking.config.AppConfig
 import pureconfig.generic.auto._
-import kg.challange.ranking.service.JokesService
-import kg.challange.ranking.models.Joke
+import kg.challange.ranking.service.GithubRankingService
+
 
 object GithubRankingServer {
 
@@ -24,10 +24,10 @@ object GithubRankingServer {
 
     for {
       client <- BlazeClientBuilder[F](global).stream
-      jokeAlg = JokesService.impl[F](client)
-  
+      githubAlg = GithubRankingService[F](client, config, ghToken)
+
       httpApp = (
-        GithubRankingRoutes.jokeRoutes[F](jokeAlg)
+        GithubRankingRoutes.rankingRoutes[F](githubAlg)
       ).orNotFound
 
       finalHttpApp = Logger.httpApp(true, true)(httpApp)
