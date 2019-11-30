@@ -1,41 +1,57 @@
 package kg.challange.ranking
 
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
-import cats.implicits._
-import fs2.Stream
+import cats.Parallel
+import cats.effect._
+import cats.syntax.functor._
+import cats.syntax.option._
+
+import monix.eval.{Task, TaskApp}
+import org.http4s.client.Client
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.implicits._
+import org.http4s.server.{Server => Http4sServer}
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.middleware.Logger
-import scala.concurrent.ExecutionContext.global
+import org.http4s.implicits._
+import pureconfig.generic.auto._ // required
 import kg.challange.ranking.routes.GithubRankingRoutes
 import kg.challange.ranking.config.AppConfig
-import pureconfig.generic.auto._
 import kg.challange.ranking.service.GithubRankingService
+import scala.util.Try
+import scala.concurrent.ExecutionContext
+import scala.language.higherKinds
+import java.util.concurrent.Executors
 
+object Server extends TaskApp {
 
-object GithubRankingServer {
+  def invokeServer[F[_] : ContextShift : ConcurrentEffect : Timer, G[_]](implicit p: Parallel[F, G]): Resource[F, Http4sServer[F]] = {
 
-  def stream[F[_]: ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+    val config = pureconfig
+      .loadConfig[AppConfig]
+      .getOrElse(AppConfig())
 
-    val config = pureconfig.loadConfig[AppConfig].getOrElse(AppConfig())
-
-    val ghToken: Option[String] = sys.env.get("GH_TOKEN")
+    val userToken = Try(System.getenv("GH_TOKEN")).toOption.flatMap(t => if (t == null) None else t.some)
 
     for {
-      client <- BlazeClientBuilder[F](global).stream
-      githubAlg = GithubRankingService[F](client, config, ghToken)
-
-      httpApp = (
-        GithubRankingRoutes.rankingRoutes[F](githubAlg)
-      ).orNotFound
-
-      finalHttpApp = Logger.httpApp(true, true)(httpApp)
-
-      exitCode <- BlazeServerBuilder[F]
+      client <- createClient[F](config)
+      githubService = GithubRankingService[F, G](client, config,userToken)
+      httpApp = GithubRankingRoutes.rankingRoutes[F, G](githubService).orNotFound
+      server <-
+      BlazeServerBuilder[F]
         .bindHttp(config.port, config.host)
-        .withHttpApp(finalHttpApp)
-        .serve
-    } yield exitCode
-  }.drain
+        .withHttpApp(httpApp)
+        .resource
+    } yield server
+  }
+
+  def createClient[F[_] : ConcurrentEffect](config: AppConfig): Resource[F, Client[F]] = {
+    val blockingEC = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(config.nThreadsBlocking))
+    BlazeClientBuilder[F](blockingEC)
+      .withMaxWaitQueueLimit(config.clientMaxWaitQueueLimit)
+      .withMaxTotalConnections(config.totalClientConnections).resource
+  }
+
+  def run(args : List[String]) : Task[ExitCode] =
+    invokeServer[Task, Task.Par]
+      .use(_ => Task.never)
+      .as(ExitCode.Success)
+
 }

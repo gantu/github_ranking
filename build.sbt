@@ -5,6 +5,7 @@ val LogbackVersion = "1.2.3"
 val catsVersion = "1.6.1"
 val catsEffectVersion = "1.3.1"
 val pureConfigVersion = "0.11.1"
+val monixVersion = "3.0.0-RC3"
 
 
 lazy val root = (project in file("."))
@@ -23,7 +24,8 @@ lazy val root = (project in file("."))
       "ch.qos.logback"  %  "logback-classic"     % LogbackVersion,
       "org.typelevel"   %% "cats-effect"         % catsEffectVersion,
       "org.typelevel"   %% "cats-core"           % catsVersion,
-      "com.github.pureconfig" %% "pureconfig" % pureConfigVersion
+      "com.github.pureconfig" %% "pureconfig" % pureConfigVersion,
+      "io.monix" %% "monix" % monixVersion
     ),
     addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.10.3"),
     addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.0")
