@@ -59,7 +59,7 @@ case class GithubRankingService[F[_]](C: Client[F], config: AppConfig, ghToken: 
   }
 
   def sortContributors(list: List[Contributor]): F[List[Contributor]] = {
-    F.pure(list.groupBy(_.login).map(a => Contributor(a._1, sum(a._2))).toList.sortBy(_.contributions))
+    F.pure(list.groupBy(_.login).map(a => Contributor(a._1, sum(a._2))).toList.sortWith(_.contributions > _.contributions))
   }
 
   def sum(l: List[Contributor]): Long = l.map(_.contributions).sum
