@@ -32,7 +32,7 @@ object Server extends TaskApp {
 
     for {
       client <- createClient[F](config)
-      githubService = GithubRankingService[F](client, config,userToken)
+      githubService = GithubRankingService[F](client, config.copy(ghToken = userToken))
       httpApp = GithubRankingRoutes.rankingRoutes[F](githubService).orNotFound
       server <-
       BlazeServerBuilder[F]

@@ -6,5 +6,6 @@ case class AppConfig(
     githubApiUrl: String = "https://api.github.com",
     nThreadsBlocking: Int = 4,
     totalClientConnections: Int = 50,
-    clientMaxWaitQueueLimit: Int = 512
+    clientMaxWaitQueueLimit: Int = 512,
+    ghToken : Option[String] = None
 )

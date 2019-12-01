@@ -24,12 +24,12 @@ import scala.util.Try
 import scala.annotation.tailrec
 import cats.Parallel
 
-case class GithubRankingService[F[_]](C: Client[F], config: AppConfig, ghToken: Option[String])(implicit F: Sync[F], parallel: Parallel[F]) {
+case class GithubRankingService[F[_]](C: Client[F], config: AppConfig)(implicit F: Sync[F], parallel: Parallel[F]) {
   val dsl = new Http4sClientDsl[F]{}
   import dsl._
   
   val ghApiUrl = config.githubApiUrl
-  val customHeaders: Headers = ghToken.map { t => 
+  val customHeaders: Headers = config.ghToken.map { t => 
     Headers.of(
       Header("Authorization", s"token $t"),
       Header("Accept", "application/vnd.github.v3+json")
