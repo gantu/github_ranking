@@ -24,7 +24,7 @@ import scala.util.Try
 import scala.annotation.tailrec
 import cats.Parallel
 
-case class GithubRankingService[F[_], G[_]](C: Client[F], config: AppConfig, ghToken: Option[String])(implicit F: Sync[F], parallel: Parallel[F,G]) {
+case class GithubRankingService[F[_]](C: Client[F], config: AppConfig, ghToken: Option[String])(implicit F: Sync[F], parallel: Parallel[F]) {
   val dsl = new Http4sClientDsl[F]{}
   import dsl._
   

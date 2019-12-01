@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
 
 object Server extends TaskApp {
 
-  def invokeServer[F[_] : ContextShift : ConcurrentEffect : Timer, G[_]](implicit p: Parallel[F, G]): Resource[F, Http4sServer[F]] = {
+  def invokeServer[F[_] : ContextShift : ConcurrentEffect : Timer](implicit p: Parallel[F]): Resource[F, Http4sServer[F]] = {
 
     val config = pureconfig
       .loadConfig[AppConfig]
@@ -32,8 +32,8 @@ object Server extends TaskApp {
 
     for {
       client <- createClient[F](config)
-      githubService = GithubRankingService[F, G](client, config,userToken)
-      httpApp = GithubRankingRoutes.rankingRoutes[F, G](githubService).orNotFound
+      githubService = GithubRankingService[F](client, config,userToken)
+      httpApp = GithubRankingRoutes.rankingRoutes[F](githubService).orNotFound
       server <-
       BlazeServerBuilder[F]
         .bindHttp(config.port, config.host)
@@ -50,7 +50,7 @@ object Server extends TaskApp {
   }
 
   def run(args : List[String]) : Task[ExitCode] =
-    invokeServer[Task, Task.Par]
+    invokeServer[Task]
       .use(_ => Task.never)
       .as(ExitCode.Success)
 
